@@ -37,18 +37,7 @@ class Utils {
         // gets informed that the entered email is already registered.
         if (err.code === 11000) {
             errors.email = 'This email is already registered';
-
             return errors;
-        }
-
-        // incorrect email
-        if (err.message === 'incorrect email') {
-            errors.email = 'That email is not registered';
-        }
-
-        // incorrect password
-        if (err.message === 'incorrect password') {
-            errors.password = 'That password is incorrect';
         }
 
         // Input validation errors
@@ -61,12 +50,10 @@ class Utils {
         // errors[properties.path] = properties.message assigns these property values to the locally defined errors
         // properties email and password, respectively. In the end, the code returns these values to the user route.
         if (err.message.includes('User validation failed')) {
-
             console.log(err.message);
             Object.values(err.errors).forEach(({properties}) => {
                 errors[properties.path] = properties.message;
             });
-
             return errors;
         }
     }

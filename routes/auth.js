@@ -35,44 +35,21 @@ router.post('/signin', async (req, res) => {
     // The function retrieves the email and password from the request body and uses the login function inside the user
     // model to verify the login. If the login is successful, it creates a JWT token. For convenience, we send this
     // token, together with the user information back in the response.
-    /*await User.findOne({email})
-        .then(async (user) => {
-            if (user == null) {
-                return res.status(400).json({message: 'User not found'})
-            }
-
-            if (Utils.verifyHash(req.body.password, user.password)) {
-                let payload = {
-                    _id: user._id
-                }
-                let accessToken = Utils.createToken(payload);
-                user.password = undefined;
-                return res.json({
-                    accessToken: accessToken,
-                    user: user
-                })
-            } else {
-                return res.status(400).json({
-                    message: 'Email or Password incorrect'
-                })
-            }
-        })*/
-
     await User.login(email, password)
         .then((user) => {
             if (user == null) {
                 return res.status(400).json({message: 'User not found'})
             }
 
-            const userObject = {
+            const tokenPayload = {
                 _id: user._id,
             };
 
-            console.log(userObject);
-            const token = Utils.createToken(userObject);
+            console.log(tokenPayload);
+            const token = Utils.createToken(tokenPayload);
 
             // Remove password from userObject
-            userObject.password = undefined;
+            tokenPayload.password = undefined;
 
             // Once the token is generated, we return a response with the user object and the token, so that we can
             // verify a successful login in Postman. Where this response will lead in the final website is yet to be
@@ -80,7 +57,7 @@ router.post('/signin', async (req, res) => {
             // return to the homepage, unlocking access to the restricted aea, or redirect the user directly to the
             // restricted area.
             return res.json({
-                user: userObject,
+                user: user,
                 accessToken: token
             });
         })
@@ -103,46 +80,46 @@ router.post('/signin', async (req, res) => {
 // Endpoint: /auth/validate
 router.get('/validate', (req, res) => {
 
-        // First we get the token from the header. Because the token in the header is stored as 'Bearer token' in the
-        // Authorization key, we split the token value at the space and use the second half (index 1).
-        const token = req.headers['authorization'].split(' ')[1];
+    // First we get the token from the header. Because the token in the header is stored as 'Bearer token' in the
+    // Authorization key, we split the token value at the space and use the second half (index 1).
+    const token = req.headers['authorization'].split(' ')[1];
 
-        // Now we check if the token exists and is valid.
-        if (token) {
+    // Now we check if the token exists and is valid.
+    if (token) {
 
-            // If a token exists, we can try to verify it with the server.
-            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, tokenData) => {
+        // If a token exists, we can try to verify it with the server.
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, tokenData) => {
 
-                // If verification fails, we return the error. In the final project, this response could redirect the user
-                // to the sign-in page.
-                if (err) {
-                    console.log(err.message);
-                    return res.status(403).json({message: 'Unauthorised'}); // Forbidden
-                }
+            // If verification fails, we return the error. In the final project, this response could redirect the user
+            // to the sign-in page.
+            if (err) {
+                console.log(err.message);
+                return res.status(403).json({message: 'Unauthorised'}); // Forbidden
+            }
 
-                User.findById(tokenData._id)
-                    .then((user) => {
-                        user.password = undefined
-                        res.json({
-                            user: user
-                        })
+            User.findById(tokenData._id)
+                .then((user) => {
+                    user.password = undefined
+                    res.json({
+                        user: user
                     })
-                    .catch((err) => {
-                        console.log(err)
-                        res.status(500).json({
-                            message: "Problem validating token",
-                            error: err
-                        })
-                    });
-            })
+                })
+                .catch((err) => {
+                    console.log(err)
+                    res.status(500).json({
+                        message: "Problem validating token",
+                        error: err
+                    })
+                });
+        })
 
-            // If there is no token at all, we return a message. In the final project, this will lead to the sign-in page.
-        } else {
-            res.status(400).json({
-                message: 'No token provided.'
-            });
-        }
-    });
+        // If there is no token at all, we return a message. In the final project, this will lead to the sign-in page.
+    } else {
+        res.status(400).json({
+            message: 'No token provided.'
+        });
+    }
+});
 
 
 module.exports = router;

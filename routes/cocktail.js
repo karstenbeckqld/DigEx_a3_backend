@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------------------------------------------------*/
-/*--------------------------------------               User Routes               -------------------------------------*/
+/*--------------------------------------             Cocktail Routes             -------------------------------------*/
 /*--------------------------------------------------------------------------------------------------------------------*/
 
 /*jshint esversion: 8 */
@@ -8,7 +8,8 @@
 // Import dependencies.
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const Cocktail = require('../models/cocktail');
+const Spirit = require('../models/spirit');
 const Utils = require('../Utils');
 const path = require('path');
 
@@ -17,42 +18,35 @@ const path = require('path');
 // the response. Therefore, we carry out database operations in an asynchronous way. This is why all the following code
 // blocks use async and await for operations on the database.
 
-// GET - Get all users -------------------------------------------------------------------------------------------------
-// Endpoint: /user
-// The get method gets all users from the database with the find() method on the User object. It then returns the users
-// from the database as a json object. In case of an error, we return a 400 status code and a json object containing a
-// custom message plus the error message from mongoose.
-router.get('/', async (req, res) => {
-    await User.find()
-        .then((users) => {
-            res.status(200).json(users);
+// GET - Get all cocktails----------------------------------------------------------------------------------------------
+// Endpoint: /cocktail
+router.get('/', Utils.authenticateToken, async (req, res) => {
+    await Cocktail.find().populate('spirit','_id spiritName')
+        .then((cocktails) => {
+            res.status(200).json(cocktails);
         })
         .catch((err) => {
-            console.log('Cannot get list of users: ', err);
+            console.log('Cannot get list of cocktails: ', err);
             res.status(400).json({
-                message: 'Cannot get users.',
+                message: 'Cannot get cocktails.',
                 error: err
             });
         });
 });
 
-// GET - Get specific user by id ---------------------------------------------------------------------------------------
-// Endpoint: /user/:id
-// The below get method looks up a user by a specified ID (/:id route). It uses the mongoose findById() method that
-// takes in the database id as parameter. We receive this parameter by using the req.params.id property, which we receive
-// from the request. If no user with this id exists, we return a 404 status code (not found) and a json message. If the
-// user exists, we return the user object. If there is an error with the request we handle it in the same way as above.
+// GET - Get specific cocktail by id ---------------------------------------------------------------------------------------
+// Endpoint: /cocktail/:id
 router.get('/:id', async (req, res) => {
-    await User.findById(req.params.id)
-        .then((user) => {
-            if (!user) {
+    await Cocktail.findById(req.params.id)
+        .then((cocktail) => {
+            if (!cocktail) {
                 console.log('User not found');
                 res.status(404).json({
                     message: 'User does not exist.',
                 });
             } else {
                 console.log('User Found');
-                res.json(user);
+                res.json(cocktail);
             }
         })
         .catch((err) => {
@@ -64,9 +58,9 @@ router.get('/:id', async (req, res) => {
         });
 });
 
-// POST - Create new User (Receive Form Data from GET('/signup'))----------------------------------------------------------
-// Endpoint: /user
-// The below post request receives data from the input form and creates a new user.
+// POST - Create new Cocktail ------------------------------------------------------------------------------------------
+// Endpoint: /cocktail
+// The below post request receives data from an input form and creates a new cocktail.
 router.post('/', async (req, res) => {
 
     // Check if the request body is empty and if yes, return here.
@@ -78,12 +72,12 @@ router.post('/', async (req, res) => {
 
     // First we check if the entered email is already in the database and return a response if this is the case. If the
     // entered email doesn't exist, we can continue creating a new user.
-    await User.findOne({email: req.body.email})
-        .then(async (user) => {
+    await Cocktail.findOne({email: req.body.email})
+        .then(async (cocktail) => {
 
-            // If the search returns a user, there's already a user with this email in the database. Hence, we have to
+            // If the search returns a cocktail, there's already a cocktail with this email in the database. Hence, we have to
             // return here and send a message in the response.
-            if (user != null) {
+            if (cocktail != null) {
                 console.log('Email already in database.');
                 return res.status(400).json({
                     message: 'User email already exists'
@@ -92,15 +86,15 @@ router.post('/', async (req, res) => {
 
             // let {firstName, lastName, email, password, avatar, bio, accessLevel} = req.body;
 
-            // Create new User object by using the request body content.
-            const newUser = new User(req.body);
+            // Create new Cocktail object by using the request body content.
+            const newCocktail = new Cocktail(req.body);
 
-            // Save the new user to the database
+            // Save the new cocktail to the database
             // Now we save the new newUser to the database with the save() method. If the newUser gets saved successfully, we return
             // the newUser object as json data and set the status to 201.
-            await newUser.save()
+            await newCocktail.save()
                 .then((user) => {
-                    console.log('New user created.');
+                    console.log('New cocktail created.');
                     res.status(201).json(user);
                 })
                 .catch((err) => {
@@ -115,8 +109,8 @@ router.post('/', async (req, res) => {
         });
 });
 
-// PUT - Update user with id -------------------------------------------------------------------------------------------
-// Endpoint: /user/:id
+// PUT - Update cocktail with id -------------------------------------------------------------------------------------------
+// Endpoint: /cocktail/:id
 // To update a user, we use a put request as these are usually used for updating database entries.
 router.put('/:id', Utils.authenticateToken, async (req, res) => {
 
@@ -128,38 +122,33 @@ router.put('/:id', Utils.authenticateToken, async (req, res) => {
         });
     }
 
-    let avatarFileName = null;
+    let cocktailImageFileName = null;
 
     if (req.files && req.files.avatar) {
         let uploadPath = path.join(__dirname, '..', 'public', 'images');
 
         Utils.uploadFile(req.files.avatar, uploadPath, (uniqueFileName) => {
-            avatarFileName = uniqueFileName;
+            cocktailImageFileName = uniqueFileName;
 
-            updateUser({
+            updateCocktail({
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
                 email: req.body.email,
-                avatar: avatarFileName,
+                avatar: cocktailImageFileName,
                 accessLevel: req.body.accessLevel,
                 bio: req.body.bio
             });
         })
     } else {
-        await updateUser(req.body);
+        await updateCocktail(req.body);
         console.log('User updated');
     }
 
-    // Update the user model
-    // The findByIdAndUpdate() method allows us to find and update a user in one go. For this, we read the passed on id
-    // from the request (/:id) and the body from the request. Then we return the update user as json in the response. If
-    // an error occurs, we add it to the response. We also use the handleErrors function here as the user might have
-    // wanted to update their email or password and this function specifically handles these errors. As many things can
-    // go wrong, we also pass on the error itself.
-    function updateUser(update) {
-        User.findByIdAndUpdate(req.params.id, update, {new: true})
-            .then((user) => {
-                res.json(user);
+    // Update the cocktail model
+    function updateCocktail(update) {
+        Cocktail.findByIdAndUpdate(req.params.id, update, {new: true})
+            .then((cocktail) => {
+                res.json(cocktail);
             })
             .catch((err) => {
                 console.log('User not updated.', err.message);
@@ -174,8 +163,8 @@ router.put('/:id', Utils.authenticateToken, async (req, res) => {
 })
 
 
-// DELETE - Delete user with id ----------------------------------------------------------------------------------------
-// Endpoint: /user/:id
+// DELETE - Delete cocktail with id ----------------------------------------------------------------------------------------
+// Endpoint: /cocktail/:id
 // To delete a user, we use a delete request as these are often used for database entry deletion.
 router.delete('/:id', async (req, res) => {
 
@@ -187,35 +176,29 @@ router.delete('/:id', async (req, res) => {
         });
     }
 
-    // Delete the user with given ID from the request.
-    // To delete a user, we utilise the findOneAndDelete() method from mongoose that takes in a property for lookup.
-    // Technically, we could use more than one property with this method, but the id is sufficient in our case. If the
-    // id is found and deleted, we add a message to the response. If an error occurred, we return a status of 500 and
-    // add the error plus a custom message to the returned json object.
-    // Mongo DB seems to not consider it an error when the code tries to delete a document that doesn't exist. Therefore,
-    // we have to add an extra step to check if we received a result from the operation or not.
-    await User.findOneAndDelete({_id: req.params.id}, {runValidators: true})
+    // Delete the cocktail with given ID from the request.
+    await Cocktail.findOneAndDelete({_id: req.params.id}, {runValidators: true})
         .then((result) => {
             if (result) {
                 // A user with the specified ID was found and deleted
-                console.log(`User with ID: ${req.params.id} deleted.`);
+                console.log(`Cocktail: ${req.params.id} deleted.`);
                 res.json({
-                    message: `User with ID: ${req.params.id} deleted.`,
+                    message: `Cocktail: ${req.params.id} deleted.`,
                 });
             } else {
                 // No user with the specified ID was found
-                console.log(`User with ID: ${req.params.id} not found.`);
+                console.log(`Cocktail: ${req.params.id} not found.`);
                 res.status(404).json({
-                    message: `User with ID: ${req.params.id} not found.`,
+                    message: `Cocktail: ${req.params.id} not found.`,
                 });
             }
         })
         .catch((err) => {
 
             // Here we handle any errors that occurred and send a response to the browser.
-            console.log('User not deleted.', err.message);
+            console.log('Cocktail not deleted.', err.message);
             res.status(500).json({
-                message: 'User not deleted.',
+                message: 'Cocktail not deleted.',
                 error: err
             });
         });
@@ -227,7 +210,7 @@ router.delete('/:id', async (req, res) => {
 router.delete('/', (req, res) => {
     console.log('No parameters in request');
     return res.status(400).json({
-        message: 'User ID missing from request'
+        message: 'Cocktail ID missing from request'
     });
 });
 
