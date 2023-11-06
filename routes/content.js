@@ -8,7 +8,7 @@
 // Import dependencies.
 const express = require('express');
 const router = express.Router();
-const Cocktail = require('../models/cocktail');
+const Content = require('../models/content');
 const Utils = require('../Utils');
 const path = require('path');
 
@@ -17,12 +17,12 @@ const path = require('path');
 // the response. Therefore, we carry out database operations in an asynchronous way. This is why all the following code
 // blocks use async and await for operations on the database.
 
-// GET - Get all cocktails----------------------------------------------------------------------------------------------
+// GET - Get all content----------------------------------------------------------------------------------------------
 // Endpoint: /cocktail
 router.get('/', async (req, res) => {
-    await Cocktail.find()
-        .then((users) => {
-            res.status(200).json(users);
+    await Content.find()
+        .then((content) => {
+            res.status(200).json(content);
         })
         .catch((err) => {
             console.log('Cannot get list of users: ', err);

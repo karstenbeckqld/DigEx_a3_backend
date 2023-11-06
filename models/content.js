@@ -15,44 +15,29 @@ const {Schema} = require("mongoose");
 // Create user schema
 // The schema defines the database fields and their properties.
 const cocktailSchema = new mongoose.Schema({
-    cocktailName: {
+    title: {
         type: String,
-        required: [true, 'Cocktail name is required.']
+        required: [true,'Title is required.']
     },
-    spiritName: {
-        type: String,
-        required: [true, 'Spirit name is required.']
+    description: {
+      type: String,
+      required: [true, 'description is required.']
     },
-    spirit: {
-        type: Schema.Types.ObjectId,
-        required: [true, 'Spirit is required.'],
-        ref: 'Spirit'
-    },
-    preparation: {
-        type: String,
-        required: [true, 'Cocktail preparation instructions are required.'],
-    },
-    ingredients: {
+    images: {
         type: Array,
-        required: [true, 'Cocktail ingredients are required.']
+        required: [true, 'At least one image is required.']
     },
-    story: {
+    layoutDirection: {
         type: String,
+        default: 'left'
     },
-    cocktailImage: {
+    layoutSize: {
         type: String,
-        required: [true, 'Cocktail image is required.']
-    },
-    tips: {
-        type: String,
-    },
-    spiritId: {
-        type: Number,
-        required: [true, 'Spirit ID is required.']
+        default: 'one'
     }
 
 }, {timestamps: true});
 
 
 // Export the model
-module.exports = mongoose.model("Cocktail", cocktailSchema);
+module.exports = mongoose.model("Content", cocktailSchema);
