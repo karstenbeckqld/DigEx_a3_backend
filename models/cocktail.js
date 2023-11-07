@@ -41,14 +41,15 @@ const cocktailSchema = new mongoose.Schema({
     },
     cocktailImage: {
         type: String,
-        required: [true, 'Cocktail image is required.']
     },
     tips: {
         type: String,
     },
     spiritId: {
-        type: Number,
-        required: [true, 'Spirit ID is required.']
+        type: Number
+    },
+    cocktailHeaderImage: {
+        type: String
     }
 
 }, {timestamps: true});
