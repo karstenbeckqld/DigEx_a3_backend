@@ -12,9 +12,7 @@ const Cocktail = require('../models/cocktail');
 const Spirit = require('../models/spirit');
 const Utils = require('../Utils');
 const path = require('path');
-const mongoose = require("mongoose");
-
-
+require("mongoose");
 // As database operations are not carried out on the same server, there might be a slight delay between the request and
 // the response. Therefore, we carry out database operations in an asynchronous way. This is why all the following code
 // blocks use async and await for operations on the database.
@@ -107,6 +105,7 @@ router.get('/cocktail/edit/:id', Utils.authenticateToken, async (req, res) => {
 
 router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     await Cocktail.findById(req.params.id)
+
     // Check if the request body is empty and if yes, return here (same as above).
     if (!req.params.id) {
         console.log('No cocktail ID in request.');
@@ -116,6 +115,7 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     }
 
     let cocktailImageFileName = null;
+    let cocktailHeaderFileName = null;
 
     if (req.files && req.files.avatar) {
         let uploadPath = path.join(__dirname, '..', 'public', 'images');
@@ -161,14 +161,44 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
 })
 
 router.post('/', Utils.authenticateToken, async (req, res) => {
+
+    // First we check if the body of the request is empty. If yes, we return here.
     if (!req.body) {
         return res.status(400).json({
             message: "Empty body received."
         });
     }
 
+    // Because we read the ingredients as an array in an HTML form, we added the [] to the name of the input field. This
+    // leads to the backend reading the data as , 'ingredients[]': [ 'i1', 'i2', 'i3', 'i4' ] and leads to problems. To
+    // fix this, we save the data from the request body in a variable and then remove the [] from the ingredients array.
+    const ingredients = req.body['ingredients[]'];
+    console.log(ingredients);
+
+    // Now we define a variable for the cocktail image file names for the detail header and the overview icon.
+    let cocktailOverviewFileName = null;
+    let cocktailHeaderFileName = null;
+
+    if (req.files && req.files.cocktailIconImage) {
+        let uploadPath = path.join(__dirname, '..', 'public', 'images');
+
+        Utils.uploadFile(req.files.cocktailIconImage, uploadPath, (uniqueFileName) => {
+            cocktailOverviewFileName = uniqueFileName;
+        })
+    }
+
+    if (req.files && req.files.cocktailHeaderImage) {
+        let uploadPath = path.join(__dirname, '..', 'public', 'images');
+
+        Utils.uploadFile(req.files.cocktailHeaderImage, uploadPath, (uniqueFileName) => {
+            cocktailHeaderFileName = uniqueFileName;
+        })
+    }
+
+    // Now we convert our spirit name to PascalCase, so that it matches the spirit name in the database.
     let spiritNameToPascalCase = req.body.spiritName.charAt(0).toUpperCase() + req.body.spiritName.slice(1);
 
+    // We then obtain the spirit ID from the database as we need to save it along with the new cocktail.
     await Spirit.find({spiritName: spiritNameToPascalCase})
         .then(async (spirit) => {
 
@@ -179,29 +209,34 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
                 });
             }
 
-            console.log(`Spirit ID for ${req.params.spirit}: ${spirit[0]._id}`)
+            console.log(`Spirit ID for ${spirit[0].spiritName}: ${spirit[0]._id}`)
             const spiritId = spirit[0]._id;
-            console.log(spiritId);
 
+            // Now we check if a cocktail with the same name os already in the database and if yes, we return.
             await Cocktail.findOne({cocktailName: req.body.cocktailName})
                 .then(async (cocktail) => {
+
                     if (cocktail != null) {
                         return res.status(400).json({
                             message: "Cocktail already exists."
                         });
                     }
 
+                    // Now we can create a new cocktail object from the request and the values collected from previous
+                    // methods.
                     const newCocktail = new Cocktail({
                         cocktailName: req.body.cocktailName,
                         preparation: req.body.preparation,
                         story: req.body.story,
                         tips: req.body.tips,
-                        ingredients: req.body.ingredients,
-                        cocktailImage: req.body.cocktailImage,
+                        ingredients: ingredients,
                         spiritName: req.body.spiritName,
-                        spirit: spiritId
+                        spirit: spiritId,
+                        cocktailImage: cocktailOverviewFileName,
+                        cocktailHeaderImage: cocktailHeaderFileName
                     });
 
+                    // Now we save the cocktail to the database.
                     await newCocktail.save()
                         .then((cocktail) => {
                             res.status(201).json(cocktail);
