@@ -14,7 +14,20 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose').default;
 const cors = require('cors');
 const port = process.env.PORT || 3000;
-const fileUpload = require('express-fileupload');
+const path = require('path');
+//const fileUpload = require('express-fileupload');
+
+const multer = require('multer');
+const multerStorage = multer.diskStorage({
+    destination: (req, file, callback) => {
+        callback(null, 'public/images');
+    },
+    filename: (req, file, callback) => {
+        console.log(file)
+        callback(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({storage: multerStorage});
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*                                             Express App Setup                                                      */
@@ -29,9 +42,9 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(bodyParser.urlencoded({extended: true}));
 app.use('*', cors());
-app.use(fileUpload({
+/*app.use(fileUpload({
     limits: {fileSize: 50 * 1024 * 1024}
-}));
+}));*/
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*                                             Database Connection                                                    */
@@ -57,16 +70,24 @@ mongoose.connect(process.env.DATABASE_URL, {
 /*                                                 Auth Route                                                         */
 /*--------------------------------------------------------------------------------------------------------------------*/
 const authRouter = require('./routes/auth');
-app.use('/auth', authRouter);
+app.use('/auth', upload.none(), authRouter);
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*                                                 User Route                                                         */
 /*--------------------------------------------------------------------------------------------------------------------*/
 const userRouter = require('./routes/user');
-app.use('/user', userRouter);
+app.use('/user', upload.single('avatar'), userRouter);
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*                                               Cocktail Route                                                       */
 /*--------------------------------------------------------------------------------------------------------------------*/
 const cocktailRouter = require('./routes/cocktail');
-app.use('/cocktail', cocktailRouter);
+app.use('/cocktail', upload.fields([
+    {name: 'cocktailImage', maxCount: 1},
+    {name: 'cocktailHeaderImage', maxCount: 1}]), cocktailRouter);
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+/*                                                Comment Route                                                       */
+/*--------------------------------------------------------------------------------------------------------------------*/
+const commentRouter = require('./routes/comment');
+app.use('/comment', commentRouter);

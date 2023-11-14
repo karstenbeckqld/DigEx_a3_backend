@@ -9,11 +9,31 @@
 // are not necessarily restricted to one functionality.
 
 // Required dependencies
+
+
 require('dotenv').config();
 let crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const{v4: uuidv4} = require('uuid');
+const {v4: uuidv4} = require('uuid');
 const path = require('path');
+const sharp = require('sharp');
+const Cocktail = require("./models/cocktail");
+const {json} = require("express/lib/response");
+const {promisify} = require("util");
+const mv = promisify(require('mv'));
+const multer = require('multer');
+// Create multer storage configuration
+const storage = multer.diskStorage({
+    destination: (req, file, callback) => {
+        callback(null, path.join(__dirname, '..', 'public', 'images'));
+    },
+    filename: (req, file, callback) => {
+        const fileExt = file.originalname.split('.').pop();
+        const uniqueFileName = uuidv4(undefined, undefined, undefined) + '.' + fileExt;
+        callback(null, uniqueFileName);
+    },
+});
+const upload = multer({storage: storage});
 
 // Class declaration
 class Utils {
@@ -82,35 +102,12 @@ class Utils {
     // The createToken function takes in a user id and uses the jwt sign() method to create a jsonwebtoken. The required
     // secret is stored in the.ebv file for security reasons and gets retrieved from there via the process.env function. It
     // then returns the json web token to the calling function.
-    createToken(userObject)  {
+    createToken(userObject) {
         return jwt.sign(userObject, process.env.ACCESS_TOKEN_SECRET, {
 
             // Now we set the expiry for this token to 30 minutes.
-            expiresIn: '90min'
+            expiresIn: '360min'
         });
-    }
-
-    uploadFile(file, uploadPath, callback){
-        // Get the file extension
-        const fileExt = file.name.split('.').pop();
-
-        // Create a unique filename
-        const uniqueFileName = uuidv4(undefined, undefined, undefined) + '.' + fileExt;
-
-        // Define the upload path
-        const fullUploadPath = path.join(uploadPath, uniqueFileName);
-
-        // Move the image to the upload path
-        file.mv(fullUploadPath, function(err) {
-            if(err){
-                console.log(err);
-                return false
-            }
-
-            if(typeof callback == 'function'){
-                callback(uniqueFileName);
-            }
-        })
     }
 
     authenticateToken(req, res, next) {
@@ -118,24 +115,18 @@ class Utils {
         const token = authHeader && authHeader.split(' ')[1];
         if (token == null) {
             res.redirect('/auth/signin');
-            /*return res.status(401).json({
-                message: 'Unauthorised'
-            })*/
         }
 
         jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-            if(err){
+            if (err) {
                 res.redirect('/auth/signin');
-                /*return res.status(401).json({
-                    message: 'Unauthorised'
-                })*/
             }
             req.user = user;
             next();
         })
     }
 
-    verifyHash(password, original){
+    verifyHash(password, original) {
         const originalHash = original.split('$')[1];
         const salt = original.split('$')[0];
         const hash = crypto.pbkdf2Sync(password, salt, 2048, 32, 'sha512').toString('hex');

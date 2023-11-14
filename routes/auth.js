@@ -20,6 +20,8 @@ const jwt = require("jsonwebtoken");
 // handled here.
 router.post('/signin', async (req, res) => {
 
+    console.log('From auth.js: ', req.body);
+
     // First, we check if the request body contains an email and password. If not, or only one got provided, we return
     // and attach a message to the response.
     if (!req.body.email || !req.body.password) {

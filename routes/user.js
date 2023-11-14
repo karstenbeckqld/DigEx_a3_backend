@@ -11,6 +11,7 @@ const router = express.Router();
 const User = require('../models/user');
 const Utils = require('../Utils');
 const path = require('path');
+const sharp = require('sharp');
 
 
 // As database operations are not carried out on the same server, there might be a slight delay between the request and
@@ -48,7 +49,7 @@ router.get('/:id', async (req, res) => {
             if (!user) {
                 console.log('User not found');
                 res.status(404).json({
-                    message: 'User does not exist.',
+                    message: 'User does not exist.'
                 });
             } else {
                 console.log('User Found');
@@ -90,8 +91,6 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            // let {firstName, lastName, email, password, avatar, bio, accessLevel} = req.body;
-
             // Create new User object by using the request body content.
             const newUser = new User(req.body);
 
@@ -118,60 +117,55 @@ router.post('/', async (req, res) => {
 // PUT - Update user with id -------------------------------------------------------------------------------------------
 // Endpoint: /user/:id
 // To update a user, we use a put request as these are usually used for updating database entries.
-router.put('/:id', Utils.authenticateToken, async (req, res) => {
+router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
 
-    // Check if the request body is empty and if yes, return here (same as above).
-    if (!req.body) {
-        console.log('No data in request.');
-        return res.status(400).json({
-            message: "Empty body received."
-        });
-    }
+        console.log('Received data: ', req.body);
 
-    let avatarFileName = null;
 
-    if (req.files && req.files.avatar) {
-        let uploadPath = path.join(__dirname, '..', 'public', 'images');
+        // Check if the request body is empty and if yes, return here (same as above).
+        if (!req.body) {
+            console.log('No data in request.');
+            return res.status(400).json({
+                message: "Empty body received."
+            });
+        }
 
-        Utils.uploadFile(req.files.avatar, uploadPath, (uniqueFileName) => {
-            avatarFileName = uniqueFileName;
+        let avatarFileName = null;
+
+        if (req.files) {
+
+            avatarFileName = req.file.filename;
 
             updateUser({
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
                 email: req.body.email,
                 avatar: avatarFileName,
-                accessLevel: req.body.accessLevel,
                 bio: req.body.bio
             });
-        })
-    } else {
-        await updateUser(req.body);
-        console.log('User updated');
-    }
 
-    // Update the user model
-    // The findByIdAndUpdate() method allows us to find and update a user in one go. For this, we read the passed on id
-    // from the request (/:id) and the body from the request. Then we return the update user as json in the response. If
-    // an error occurs, we add it to the response. We also use the handleErrors function here as the user might have
-    // wanted to update their email or password and this function specifically handles these errors. As many things can
-    // go wrong, we also pass on the error itself.
-    function updateUser(update) {
-        User.findByIdAndUpdate(req.params.id, update, {new: true})
-            .then((user) => {
-                res.json(user);
-            })
-            .catch((err) => {
-                console.log('User not updated.', err.message);
-                const errors = Utils.handleErrors(err);
-                res.status(500).json({
-                    message: 'User not updated.',
-                    errors: errors,
-                    error: err
+        } else {
+            await updateUser(req.body);
+            console.log('User updated');
+        }
+
+        function updateUser(update) {
+            User.findByIdAndUpdate(req.params.id, update, {new: true})
+                .then((user) => {
+                    res.json(user);
+                })
+                .catch((err) => {
+                    console.log('User not updated.', err.message);
+                    const errors = Utils.handleErrors(err);
+                    res.status(500).json({
+                        message: 'User not updated.',
+                        errors: errors,
+                        error: err
+                    });
                 });
-            });
+        }
     }
-})
+)
 
 
 // DELETE - Delete user with id ----------------------------------------------------------------------------------------
@@ -230,5 +224,13 @@ router.delete('/', (req, res) => {
         message: 'User ID missing from request'
     });
 });
+
+// Update the user model
+// The findByIdAndUpdate() method allows us to find and update a user in one go. For this, we read the passed on id
+// from the request (/:id) and the body from the request. Then we return the update user as json in the response. If
+// an error occurs, we add it to the response. We also use the handleErrors function here as the user might have
+// wanted to update their email or password and this function specifically handles these errors. As many things can
+// go wrong, we also pass on the error itself.
+
 
 module.exports = router;

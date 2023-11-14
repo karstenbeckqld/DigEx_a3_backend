@@ -13,6 +13,9 @@ const Spirit = require('../models/spirit');
 const Utils = require('../Utils');
 const path = require('path');
 require("mongoose");
+
+
+
 // As database operations are not carried out on the same server, there might be a slight delay between the request and
 // the response. Therefore, we carry out database operations in an asynchronous way. This is why all the following code
 // blocks use async and await for operations on the database.
@@ -104,9 +107,12 @@ router.get('/cocktail/edit/:id', Utils.authenticateToken, async (req, res) => {
 });
 
 router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
-    await Cocktail.findById(req.params.id)
 
-    // Check if the request body is empty and if yes, return here (same as above).
+    let cocktailIconFileName = null;
+    let cocktailHeaderFileName = null;
+
+
+    // Check if the ID is empty and if yes, return here (same as above).
     if (!req.params.id) {
         console.log('No cocktail ID in request.');
         return res.status(400).json({
@@ -114,53 +120,65 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
         });
     }
 
-    let cocktailImageFileName = null;
-    let cocktailHeaderFileName = null;
+    const ingredients = req.body['ingredients[]'];
 
-    if (req.files && req.files.avatar) {
-        let uploadPath = path.join(__dirname, '..', 'public', 'images');
 
-        Utils.uploadFile(req.files.avatar, uploadPath, (uniqueFileName) => {
-            cocktailImageFileName = uniqueFileName;
+    if (req.files) {
 
-            updateCocktail({
-                cocktailName: req.body.cocktailName,
-                preparation: req.body.preparation,
-                story: req.body.story,
-                tips: req.body.tips,
-                ingredients: req.body.ingredients,
-                cocktailImage: cocktailImageFileName
-            });
-        })
+        if (req.files['cocktailImage']) {
+            cocktailIconFileName = req.files['cocktailImage'][0].filename;
+        } else {
+            cocktailIconFileName = req.body.cocktailImage;
+        }
+
+        if (req.files['cocktailHeaderImage']) {
+            cocktailHeaderFileName = req.files['cocktailHeaderImage'][0].filename;
+        } else {
+            cocktailHeaderFileName = req.body.cocktailHeaderImage;
+        }
+
+        await updateCocktail({
+            cocktailName: req.body.cocktailName,
+            preparation: req.body.preparation,
+            story: req.body.story,
+            tips: req.body.tips,
+            ingredients: ingredients,
+            spiritName: req.body.spiritName,
+            spirit: req.body.spirit,
+            cocktailImage: cocktailIconFileName,
+            cocktailHeaderImage: cocktailHeaderFileName
+        });
+
+        console.log('Cocktail updated with images');
+
+
     } else {
         await updateCocktail(req.body);
         console.log('Cocktail updated');
     }
 
-    // Update the user model
-    // The findByIdAndUpdate() method allows us to find and update a user in one go. For this, we read the passed on id
-    // from the request (/:id) and the body from the request. Then we return the update user as json in the response. If
-    // an error occurs, we add it to the response. We also use the handleErrors function here as the user might have
-    // wanted to update their email or password and this function specifically handles these errors. As many things can
-    // go wrong, we also pass on the error itself.
-    function updateCocktail(update) {
-        Cocktail.findByIdAndUpdate(req.params.id, update, {new: true})
-            .then((cocktail) => {
-                res.json(cocktail);
-            })
-            .catch((err) => {
-                console.log('User not updated.', err.message);
-                const errors = Utils.handleErrors(err);
-                res.status(500).json({
-                    message: 'User not updated.',
-                    errors: errors,
-                    error: err
-                });
+    // Update the cocktail model
+    async function updateCocktail(update) {
+        try {
+            const cocktail = await Cocktail.findByIdAndUpdate(req.params.id, update, {new: true});
+            res.status(200).json(cocktail);
+            console.log('Cocktail updated:', cocktail);
+        } catch (err) {
+            console.log('Cocktail not updated.', err.message);
+            const errors = Utils.handleErrors(err);
+            res.status(500).json({
+                message: 'Cocktail not updated.',
+                errors: errors,
+                error: err
             });
+        }
     }
 })
 
+
 router.post('/', Utils.authenticateToken, async (req, res) => {
+
+    console.log('Req body in cocktail post',req.body);
 
     // First we check if the body of the request is empty. If yes, we return here.
     if (!req.body) {
@@ -172,27 +190,26 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
     // Because we read the ingredients as an array in an HTML form, we added the [] to the name of the input field. This
     // leads to the backend reading the data as , 'ingredients[]': [ 'i1', 'i2', 'i3', 'i4' ] and leads to problems. To
     // fix this, we save the data from the request body in a variable and then remove the [] from the ingredients array.
-    const ingredients = req.body['ingredients[]'];
-    console.log(ingredients);
+    //const ingredients = req.body['ingredients[]'];
+    //console.log(ingredients);
 
     // Now we define a variable for the cocktail image file names for the detail header and the overview icon.
-    let cocktailOverviewFileName = null;
+    let cocktailIconFileName = null;
     let cocktailHeaderFileName = null;
+    let ingredients = req.body.ingredients.pop();
 
-    if (req.files && req.files.cocktailIconImage) {
-        let uploadPath = path.join(__dirname, '..', 'public', 'images');
+    if (req.files) {
+        if (req.files['cocktailImage']) {
+            cocktailIconFileName = req.files['cocktailImage'][0].filename;
+        } else {
+            cocktailIconFileName = req.body.cocktailImage;
+        }
 
-        Utils.uploadFile(req.files.cocktailIconImage, uploadPath, (uniqueFileName) => {
-            cocktailOverviewFileName = uniqueFileName;
-        })
-    }
-
-    if (req.files && req.files.cocktailHeaderImage) {
-        let uploadPath = path.join(__dirname, '..', 'public', 'images');
-
-        Utils.uploadFile(req.files.cocktailHeaderImage, uploadPath, (uniqueFileName) => {
-            cocktailHeaderFileName = uniqueFileName;
-        })
+        if (req.files['cocktailHeaderImage']) {
+            cocktailHeaderFileName = req.files['cocktailHeaderImage'][0].filename;
+        } else {
+            cocktailHeaderFileName = req.body.cocktailHeaderImage;
+        }
     }
 
     // Now we convert our spirit name to PascalCase, so that it matches the spirit name in the database.
@@ -232,7 +249,7 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
                         ingredients: ingredients,
                         spiritName: req.body.spiritName,
                         spirit: spiritId,
-                        cocktailImage: cocktailOverviewFileName,
+                        cocktailImage: cocktailIconFileName,
                         cocktailHeaderImage: cocktailHeaderFileName
                     });
 
