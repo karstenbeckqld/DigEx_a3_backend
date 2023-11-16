@@ -6,14 +6,18 @@
 // To avoid validator errors regarding arrow function syntax, we use the above comment line.
 
 // Import dependencies.
+require("mongoose");
 const express = require('express');
 const router = express.Router();
 const Cocktail = require('../models/cocktail');
 const Spirit = require('../models/spirit');
 const Utils = require('../Utils');
 const path = require('path');
-require("mongoose");
 
+const multer = require('multer');
+const sharp = require('sharp');
+const storage = multer.memoryStorage();
+const upload = multer({storage: storage});
 
 
 // As database operations are not carried out on the same server, there might be a slight delay between the request and
@@ -76,6 +80,7 @@ router.get('/:spirit', Utils.authenticateToken, async (req, res) => {
         })
 });
 
+// Get cocktail information by ID.
 router.get('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     await Cocktail.findById(req.params.id)
         .then((cocktail) => {
@@ -110,6 +115,7 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
 
     let cocktailIconFileName = null;
     let cocktailHeaderFileName = null;
+    //let ingredients = req.body.ingredients;
 
 
     // Check if the ID is empty and if yes, return here (same as above).
@@ -126,13 +132,13 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     if (req.files) {
 
         if (req.files['cocktailImage']) {
-            cocktailIconFileName = req.files['cocktailImage'][0].filename;
+            cocktailIconFileName = await Utils.processImage(req.files['cocktailImage'][0].filename, 200, 200);
         } else {
             cocktailIconFileName = req.body.cocktailImage;
         }
 
         if (req.files['cocktailHeaderImage']) {
-            cocktailHeaderFileName = req.files['cocktailHeaderImage'][0].filename;
+            cocktailHeaderFileName = await Utils.processImage(req.files['cocktailHeaderImage'][0].filename, 1600, 800);
         } else {
             cocktailHeaderFileName = req.body.cocktailHeaderImage;
         }
@@ -175,10 +181,8 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     }
 })
 
-
 router.post('/', Utils.authenticateToken, async (req, res) => {
 
-    console.log('Req body in cocktail post',req.body);
 
     // First we check if the body of the request is empty. If yes, we return here.
     if (!req.body) {
@@ -186,6 +190,11 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
             message: "Empty body received."
         });
     }
+
+    console.log('Req body in cocktail post', req.body);
+    console.log('Req files in cocktail post', req.files);
+    // console.log('Req cocktailImage file', req.files['cocktailImage'][0]);
+    // console.log('Req cocktailHeaderImage file', req.files['cocktailHeaderImage'][0]);
 
     // Because we read the ingredients as an array in an HTML form, we added the [] to the name of the input field. This
     // leads to the backend reading the data as , 'ingredients[]': [ 'i1', 'i2', 'i3', 'i4' ] and leads to problems. To
@@ -196,17 +205,17 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
     // Now we define a variable for the cocktail image file names for the detail header and the overview icon.
     let cocktailIconFileName = null;
     let cocktailHeaderFileName = null;
-    let ingredients = req.body.ingredients.pop();
+    let ingredients = req.body.ingredients;
 
     if (req.files) {
         if (req.files['cocktailImage']) {
-            cocktailIconFileName = req.files['cocktailImage'][0].filename;
+            cocktailIconFileName = await Utils.processImage(req.files['cocktailImage'][0].filename, 200, 200);
         } else {
             cocktailIconFileName = req.body.cocktailImage;
         }
 
         if (req.files['cocktailHeaderImage']) {
-            cocktailHeaderFileName = req.files['cocktailHeaderImage'][0].filename;
+            cocktailHeaderFileName = await Utils.processImage(req.files['cocktailHeaderImage'][0].filename, 1600, 800);
         } else {
             cocktailHeaderFileName = req.body.cocktailHeaderImage;
         }
@@ -266,6 +275,30 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
                             });
                         });
                 });
+        });
+});
+
+router.delete('/:id', Utils.authenticateToken, async (req, res) => {
+    await Cocktail.findByIdAndDelete(req.params.id)
+        .then((cocktail) => {
+            if (!cocktail) {
+                console.log('Cocktail not found');
+                res.status(404).json({
+                    message: 'Cocktail does not exist.',
+                });
+            } else {
+                console.log('Cocktail deleted');
+                res.status(200).json({
+                    message: 'Cocktail deleted.',
+                });
+            }
+        })
+        .catch((err) => {
+            console.log('Cannot delete cocktail: ', err);
+            res.status(400).json({
+                message: 'Cannot delete cocktail.',
+                error: err
+            });
         });
 });
 

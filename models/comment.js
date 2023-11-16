@@ -24,13 +24,22 @@ const commentSchema = new mongoose.Schema({
     text: {
         type: String,
         required: [true, 'Please enter a comment.'],
-        minLength: [1, 'Comment must have a minimum of 1 character.']
+        minLength: [1, 'Comment must have a minimum of 1 character.'],
+        maxLength: [250, 'Comment cannot exceed 250 characters.']
     },
-    user: {
+    cocktailId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Cocktail',
+        required: [true, 'Please provide a cocktail ID.']
+    },
+    userId:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'Please provide a user.']
+        required: [true, 'Please provide a user ID.']
     },
+    userName: {
+        type: String
+    }
 }, {timestamps: true});
 
 module.exports = mongoose.model("Comment", commentSchema);

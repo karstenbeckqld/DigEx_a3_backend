@@ -120,6 +120,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
 
         console.log('Received data: ', req.body);
+        console.log('Received file: ', req.file);
 
 
         // Check if the request body is empty and if yes, return here (same as above).
@@ -132,11 +133,11 @@ router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
 
         let avatarFileName = null;
 
-        if (req.files) {
+        if (req.file) {
 
-            avatarFileName = req.file.filename;
+            avatarFileName = await Utils.processImage(req.file.filename, 200, 200);
 
-            updateUser({
+           await updateUser({
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
                 email: req.body.email,
@@ -149,7 +150,7 @@ router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
             console.log('User updated');
         }
 
-        function updateUser(update) {
+        async function updateUser(update) {
             User.findByIdAndUpdate(req.params.id, update, {new: true})
                 .then((user) => {
                     res.json(user);
@@ -167,11 +168,10 @@ router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
     }
 )
 
-
 // DELETE - Delete user with id ----------------------------------------------------------------------------------------
 // Endpoint: /user/:id
 // To delete a user, we use a delete request as these are often used for database entry deletion.
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', Utils.authenticateToken, async (req, res) => {
 
     // Check if ID is missing from the request, if yes, return.
     if (!req.params.id || !req.params || req.params.id === '') {
@@ -218,11 +218,25 @@ router.delete('/:id', async (req, res) => {
 // Because the checks in the delete('/:id') request don't work properly with Postman, although they're not
 // programmatically wrong, to catch an input trying to delete a user without an id parameter, we've added the below
 // route, which returns a response with an appropriate error message.
-router.delete('/', (req, res) => {
+router.delete('/', Utils.authenticateToken, (req, res) => {
     console.log('No parameters in request');
     return res.status(400).json({
         message: 'User ID missing from request'
     });
+});
+
+router.post('/id', Utils.authenticateToken, async (req, res) => {
+   try {
+       const {userIds} = req.body;
+       const validUserIds = iserIds.map(id => mongoose.Types.ObjectId(id));
+       const users = await User.find({_id: {$in: validUserIds}});
+       res.status(200).json(users);
+   } catch (err) {
+       console.log(err);
+       res.status(400).json({
+           message: 'No user ids provided.'
+       });
+   }
 });
 
 // Update the user model

@@ -20,8 +20,8 @@ const sharp = require('sharp');
 const Cocktail = require("./models/cocktail");
 const {json} = require("express/lib/response");
 const {promisify} = require("util");
-const mv = promisify(require('mv'));
 const multer = require('multer');
+const {unlinkSync} = require("fs");
 // Create multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
@@ -126,11 +126,21 @@ class Utils {
         })
     }
 
-    verifyHash(password, original) {
-        const originalHash = original.split('$')[1];
-        const salt = original.split('$')[0];
-        const hash = crypto.pbkdf2Sync(password, salt, 2048, 32, 'sha512').toString('hex');
-        return hash === originalHash;
+    async processImage(file, width, height, next) {
+
+        try{
+            const processedImage = await sharp('public/images/' + file)
+                .resize(width,height)
+                .png({quality: 50,compressionLevel: 9, adaptiveFiltering: true, force: true})
+                .toFile('public/images/processed/' + file)
+
+            console.log('Processed Image', processedImage);
+            console.log(file);
+        } catch (err) {
+            console.log('Error processing image', err);
+        }
+
+        return file.toString();
     }
 }
 

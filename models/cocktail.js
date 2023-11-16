@@ -45,9 +45,6 @@ const cocktailSchema = new mongoose.Schema({
     tips: {
         type: String,
     },
-    spiritId: {
-        type: Number
-    },
     cocktailHeaderImage: {
         type: String
     }
