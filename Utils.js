@@ -21,7 +21,7 @@ const Cocktail = require("./models/cocktail");
 const {json} = require("express/lib/response");
 const {promisify} = require("util");
 const multer = require('multer');
-const {unlinkSync} = require("fs");
+const {unlinkSync, unlink} = require("fs");
 // Create multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
@@ -128,19 +128,30 @@ class Utils {
 
     async processImage(file, width, height, next) {
 
-        try{
+        let filename = null;
+
+        try {
+
+            filename = path.parse(file).name;
+
             const processedImage = await sharp('public/images/' + file)
                 .resize(width,height)
-                .png({quality: 50,compressionLevel: 9, adaptiveFiltering: true, force: true})
+                .png({quality: 80,compressionLevel: 9, adaptiveFiltering: true, force: true})
                 .toFile('public/images/processed/' + file)
 
             console.log('Processed Image', processedImage);
             console.log(file);
+
+            await unlink('public/images/' + file, err => {
+                console.log(err)
+            });
+            console.log('Deleted original file', file);
         } catch (err) {
             console.log('Error processing image', err);
+            throw err;
         }
 
-        return file.toString();
+        return file;
     }
 }
 

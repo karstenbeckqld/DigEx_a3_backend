@@ -113,10 +113,12 @@ router.get('/cocktail/edit/:id', Utils.authenticateToken, async (req, res) => {
 
 router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
 
+    console.log('In cocktail/:id put route');
+    console.log('--------------------------------');
+
     let cocktailIconFileName = null;
     let cocktailHeaderFileName = null;
-    //let ingredients = req.body.ingredients;
-
+    let ingredients = req.body.ingredients;
 
     // Check if the ID is empty and if yes, return here (same as above).
     if (!req.params.id) {
@@ -125,9 +127,6 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
             message: "Empty ID parameter received."
         });
     }
-
-    const ingredients = req.body['ingredients[]'];
-
 
     if (req.files) {
 
@@ -208,16 +207,20 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
     let ingredients = req.body.ingredients;
 
     if (req.files) {
-        if (req.files['cocktailImage']) {
-            cocktailIconFileName = await Utils.processImage(req.files['cocktailImage'][0].filename, 200, 200);
-        } else {
-            cocktailIconFileName = req.body.cocktailImage;
-        }
+        try {
+            if (req.files['cocktailImage']) {
+                cocktailIconFileName = await Utils.processImage(req.files['cocktailImage'][0].filename, 200, 200);
+            } else {
+                cocktailIconFileName = req.body.cocktailImage;
+            }
 
-        if (req.files['cocktailHeaderImage']) {
-            cocktailHeaderFileName = await Utils.processImage(req.files['cocktailHeaderImage'][0].filename, 1600, 800);
-        } else {
-            cocktailHeaderFileName = req.body.cocktailHeaderImage;
+            if (req.files['cocktailHeaderImage']) {
+                cocktailHeaderFileName = await Utils.processImage(req.files['cocktailHeaderImage'][0].filename, 1600, 800);
+            } else {
+                cocktailHeaderFileName = req.body.cocktailHeaderImage;
+            }
+        } catch (err) {
+            res.json({message: err.message});
         }
     }
 
