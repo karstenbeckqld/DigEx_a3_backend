@@ -13,9 +13,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose').default;
 const cors = require('cors');
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 const path = require('path');
-//const fileUpload = require('express-fileupload');
 
 const multer = require('multer');
 const multerStorage = multer.diskStorage({
