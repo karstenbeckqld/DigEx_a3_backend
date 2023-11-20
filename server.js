@@ -13,7 +13,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose').default;
 const cors = require('cors');
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 const path = require('path');
 
 const multer = require('multer');

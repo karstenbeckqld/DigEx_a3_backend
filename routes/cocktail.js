@@ -133,8 +133,11 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
         });
     }
 
+    // To ensure correct capitalisation of the spirit name, we convert it to PascalCase.
+    let spiritNameToPascalCase = req.body.spiritName.charAt(0).toUpperCase() + req.body.spiritName.slice(1);
+
     // Convert spirit name from request into id for spirit
-    await Spirit.find({spiritName: req.body.spiritName})
+    await Spirit.find({spiritName: spiritNameToPascalCase})
         .then(async (spirit) => {
             spiritId = spirit[0]._id;
         })
@@ -203,8 +206,6 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
 
     console.log('Req body in cocktail post', req.body);
     console.log('Req files in cocktail post', req.files);
-    // console.log('Req cocktailImage file', req.files['cocktailImage'][0]);
-    // console.log('Req cocktailHeaderImage file', req.files['cocktailHeaderImage'][0]);
 
     // Because we read the ingredients as an array in an HTML form, we added the [] to the name of the input field. This
     // leads to the backend reading the data as , 'ingredients[]': [ 'i1', 'i2', 'i3', 'i4' ] and leads to problems. To
