@@ -110,6 +110,10 @@ class Utils {
         });
     }
 
+    // The authenticateToken function checks if the request header contains an authorization header. If not, it redirects
+    // the user to the signin page. If the header is present, it splits the header at the space between Bearer and token.
+    // It then uses the jwt verify() method to verify the token. If the token is invalid, it redirects the user to the
+    // signin page. If the token is valid, it sets the user object in the request and calls the next function.
     authenticateToken(req, res, next) {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
@@ -126,32 +130,29 @@ class Utils {
         })
     }
 
-    async processImage(file, width, height, next) {
-
-        let filename = null;
+    // The processImage function takes in a file, width and height and uses the sharp package to resize the image. The
+    // file parameter in this case is the file name with extension. We use multer to upload files, which get stored in
+    // the /public/images/ folder. The sharp package then takes the file resizes and converts it, and saves it to the
+    // /public/images/processed/ folder. It then deletes the originally uploaded file from /public/images/ to save disk
+    // space.
+    async processImage(fileName, width, height, next) {
 
         try {
-
-            filename = path.parse(file).name;
-
-            const processedImage = await sharp('public/images/' + file)
+            await sharp('public/images/' + fileName)
                 .resize(width,height)
                 .png({quality: 80,compressionLevel: 9, adaptiveFiltering: true, force: true})
-                .toFile('public/images/processed/' + file)
-
-            console.log('Processed Image', processedImage);
-            console.log(file);
-
-            await unlink('public/images/' + file, err => {
+                .toFile('public/images/processed/' + fileName);
+            await unlink('public/images/' + fileName, err => {
                 console.log(err)
             });
-            console.log('Deleted original file', file);
+            console.log('Deleted original fileName', fileName);
         } catch (err) {
             console.log('Error processing image', err);
             throw err;
         }
 
-        return file;
+        // Return the fileName name of the processed image.
+        return fileName;
     }
 }
 

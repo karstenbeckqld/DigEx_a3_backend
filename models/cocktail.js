@@ -5,6 +5,8 @@
 /*jshint esversion: 8 */
 // To avoid validator errors regarding arrow function syntax, we use the above comment line.
 
+// This is the model for the cocktail collection in the database.
+
 // Bring in dependencies
 const mongoose = require("mongoose");
 require('mongoose-type-email');

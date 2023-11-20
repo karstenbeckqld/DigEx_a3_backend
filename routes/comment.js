@@ -12,7 +12,9 @@ const User = require('../models/user');
 const Comment = require('../models/comment');
 const Utils = require('../Utils');
 
-// get all comments
+// Get all comments ----------------------------------------------------------------------------------------------------
+// Endpoint /comment
+// This endpoint is used to get all comments.
 router.get('/', Utils.authenticateToken, async (req, res) => {
     await Comment.find()
         .then((comments) => {
@@ -27,7 +29,10 @@ router.get('/', Utils.authenticateToken, async (req, res) => {
         });
 });
 
-// get comments for cocktail id
+// Get comments for a provided cocktail ID -----------------------------------------------------------------------------
+// Endpoint /comment/:id
+// This endpoint is used to get all comments for a provided cocktail ID, so that comments can be displayed along with
+// the cocktail details.
 router.get('/:id', Utils.authenticateToken, async (req, res) => {
 
     if (!req.params.id) {
@@ -37,6 +42,7 @@ router.get('/:id', Utils.authenticateToken, async (req, res) => {
         return;
     }
 
+    // We search for all comments that contain the provided cocktail ID and return the result in the response.
     await Comment.find({cocktailId: req.params.id})
         .then((comment) => {
             res.status(200).json(comment);
@@ -50,7 +56,9 @@ router.get('/:id', Utils.authenticateToken, async (req, res) => {
         });
 });
 
-// add a comment
+// Add a comment -------------------------------------------------------------------------------------------------------
+// Endpoint /comment
+// THis endpoint adds a comment to the database.
 router.post('/', Utils.authenticateToken, async (req, res) => {
 
     if (!req.body) {
@@ -84,6 +92,8 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
 });
 
 // Delete a comment (admin only)
+// Endpoint /comment/:id
+// This endpoint allows an admin to delete a comment.
 router.delete('/:id', Utils.authenticateToken, async (req, res) => {
 
         if (!req.params.id) {

@@ -13,12 +13,7 @@ const Cocktail = require('../models/cocktail');
 const Spirit = require('../models/spirit');
 const Utils = require('../Utils');
 const path = require('path');
-
-const multer = require('multer');
-const sharp = require('sharp');
-const storage = multer.memoryStorage();
-const upload = multer({storage: storage});
-
+require('sharp');
 
 // As database operations are not carried out on the same server, there might be a slight delay between the request and
 // the response. Therefore, we carry out database operations in an asynchronous way. This is why all the following code
@@ -40,10 +35,16 @@ router.get('/', Utils.authenticateToken, async (req, res) => {
         });
 });
 
+// GET - Get cocktails by spirit name, meaning all cocktails that are associated with the provided spirit name. --------
+// Endpoint: /cocktail/:spirit
 router.get('/:spirit', Utils.authenticateToken, async (req, res) => {
 
+    // Cocktails are linked to spirits via the spirit ID. Spirits in the request are sent as lowercase string. Therefore,
+    // we first convert the string into pascal case to match the entry in the database.
     let spiritNameToPascalCase = req.params.spirit.charAt(0).toUpperCase() + req.params.spirit.slice(1);
 
+    // We then obtain the spirit ID from the database to retrieve all cocktails that match this ID and return them in
+    // the response.
     await Spirit.find({spiritName: spiritNameToPascalCase})
         .then(async (spirit) => {
 
@@ -53,10 +54,11 @@ router.get('/:spirit', Utils.authenticateToken, async (req, res) => {
                     message: 'No spirit found.',
                 });
             }
-            console.log(`Spirit ID for ${req.params.spirit}: ${spirit[0]._id}`)
-            const spiritId = spirit[0]._id;
-            console.log(spiritId);
 
+            // We can save this ID in the spiritId variable.
+            const spiritId = spirit[0]._id;
+
+            // Now we can retrieve all cocktails that match this spirit ID.
             await Cocktail.find({spirit: spiritId}).populate('spirit')
                 .then((cocktails) => {
                     if (!cocktails) {
@@ -80,7 +82,10 @@ router.get('/:spirit', Utils.authenticateToken, async (req, res) => {
         })
 });
 
-// Get cocktail information by ID.
+// Get cocktail information by ID. -------------------------------------------------------------------------------------
+// Endpoint: /cocktail/cocktail/:id
+// Here we retrieve the full dataset for a specified cocktail ID to display to the user. This includes the background
+// image filename.
 router.get('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     await Cocktail.findById(req.params.id)
         .then((cocktail) => {
@@ -96,29 +101,29 @@ router.get('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
         })
 });
 
-router.get('/cocktail/edit/:id', Utils.authenticateToken, async (req, res) => {
-    await Cocktail.findById(req.params.id)
-        .then((cocktail) => {
-            if (!cocktail) {
-                console.log('Cocktail not found');
-                res.status(404).json({
-                    message: 'Cocktail does not exist.',
-                });
-            } else {
-                console.log('Cocktail Found');
-                res.json(cocktail);
-            }
-        })
-});
-
+// Update cocktail by ID. ----------------------------------------------------------------------------------------------
+// Endpoint /cocktail/cocktail/:id
 router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
 
-    console.log('In cocktail/:id put route');
-    console.log('--------------------------------');
-
+    // Each cocktail has two image file names saved in the database. One for the icon on the overview page, and one for
+    // the header background on the detail page. Here we set the variables for these file names to null.
     let cocktailIconFileName = null;
     let cocktailHeaderFileName = null;
+
+    // We also set the variable for the spirit ID to null as we need it in the global scope for this method.
+    let spiritId = null;
+
+    // Here we save the ingredients array from the request body in a variable to be able to manipulate it.
     let ingredients = req.body.ingredients;
+
+
+    // In the edit view for a cocktail, we add an empty input field for ingredients automatically, so that a user can add
+    // ingredients if they wish. However, this produces an empty entry in the database and consequently an additional
+    // empty input field every time the edit view is loaded. To avoid this, we filter the ingredients array and remove
+    // all empty entries.
+    let filteredIngredients = ingredients.filter(function (ingredient) {
+        return ingredient.trim() !== '';
+    });
 
     // Check if the ID is empty and if yes, return here (same as above).
     if (!req.params.id) {
@@ -128,6 +133,13 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
         });
     }
 
+    // Convert spirit name from request into id for spirit
+    await Spirit.find({spiritName: req.body.spiritName})
+        .then(async (spirit) => {
+            spiritId = spirit[0]._id;
+        })
+
+    // Check if the request contains files. If yes, we process the images and save the file names in the below variables.
     if (req.files) {
 
         if (req.files['cocktailImage']) {
@@ -142,21 +154,18 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
             cocktailHeaderFileName = req.body.cocktailHeaderImage;
         }
 
+        // Create new Cocktail object with updated data to save to database.
         await updateCocktail({
             cocktailName: req.body.cocktailName,
             preparation: req.body.preparation,
             story: req.body.story,
             tips: req.body.tips,
-            ingredients: ingredients,
+            ingredients: filteredIngredients,
             spiritName: req.body.spiritName,
-            spirit: req.body.spirit,
+            spirit: spiritId,
             cocktailImage: cocktailIconFileName,
             cocktailHeaderImage: cocktailHeaderFileName
         });
-
-        console.log('Cocktail updated with images');
-
-
     } else {
         await updateCocktail(req.body);
         console.log('Cocktail updated');
@@ -180,6 +189,8 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     }
 })
 
+// Create new cocktail. ------------------------------------------------------------------------------------------------
+// Endpoint /cocktail/
 router.post('/', Utils.authenticateToken, async (req, res) => {
 
 
@@ -281,6 +292,8 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
         });
 });
 
+// Delete cocktail by ID. ----------------------------------------------------------------------------------------------
+// Endpoint /cocktail/:id
 router.delete('/:id', Utils.authenticateToken, async (req, res) => {
     await Cocktail.findByIdAndDelete(req.params.id)
         .then((cocktail) => {

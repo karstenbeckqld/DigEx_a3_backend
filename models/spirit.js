@@ -1,9 +1,11 @@
 /*--------------------------------------------------------------------------------------------------------------------*/
-/*---------------------------------------            Cocktail Model            ---------------------------------------*/
+/*---------------------------------------           Spirit Model            ------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------------------------*/
 
 /*jshint esversion: 8 */
 // To avoid validator errors regarding arrow function syntax, we use the above comment line.
+
+// This model stores the spirit names for the cocktails.
 
 // Bring in dependencies
 const mongoose = require("mongoose");

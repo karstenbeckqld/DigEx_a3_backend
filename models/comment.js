@@ -5,12 +5,12 @@
 /*jshint esversion: 8 */
 // To avoid validator errors regarding arrow function syntax, we use the above comment line.
 
+// This is the model for the Comment collection in the database.
+
 // Bring in dependencies
 const mongoose = require("mongoose");
-const {isEmail} = require('validator');
 require('mongoose-type-email');
-const Utils = require('../Utils');
-
+require('../Utils');
 // Create user schema
 // The schema defines the database fields and their properties.
 const commentSchema = new mongoose.Schema({
