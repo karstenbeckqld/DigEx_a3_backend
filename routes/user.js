@@ -10,8 +10,6 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const Utils = require('../Utils');
-const path = require('path');
-const sharp = require('sharp');
 
 
 // As database operations are not carried out on the same server, there might be a slight delay between the request and
@@ -117,7 +115,7 @@ router.post('/', async (req, res) => {
 // PUT - Update user with id -------------------------------------------------------------------------------------------
 // Endpoint: /user/:id
 // To update a user, we use a put request as these are usually used for updating database entries.
-router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
+router.put('/:id', Utils.authenticateToken, async (req, res) => {
 
         console.log('Received data: ', req.body);
         console.log('Received file: ', req.file);
@@ -166,7 +164,7 @@ router.put('/:id', Utils.authenticateToken, async (req, res, next) => {
                 });
         }
     }
-)
+);
 
 // DELETE - Delete user with id ----------------------------------------------------------------------------------------
 // Endpoint: /user/:id
@@ -224,27 +222,5 @@ router.delete('/', Utils.authenticateToken, (req, res) => {
         message: 'User ID missing from request'
     });
 });
-
-router.post('/id', Utils.authenticateToken, async (req, res) => {
-   try {
-       const {userIds} = req.body;
-       const validUserIds = iserIds.map(id => mongoose.Types.ObjectId(id));
-       const users = await User.find({_id: {$in: validUserIds}});
-       res.status(200).json(users);
-   } catch (err) {
-       console.log(err);
-       res.status(400).json({
-           message: 'No user ids provided.'
-       });
-   }
-});
-
-// Update the user model
-// The findByIdAndUpdate() method allows us to find and update a user in one go. For this, we read the passed on id
-// from the request (/:id) and the body from the request. Then we return the update user as json in the response. If
-// an error occurs, we add it to the response. We also use the handleErrors function here as the user might have
-// wanted to update their email or password and this function specifically handles these errors. As many things can
-// go wrong, we also pass on the error itself.
-
 
 module.exports = router;

@@ -22,7 +22,6 @@ const multerStorage = multer.diskStorage({
         callback(null, 'public/images');
     },
     filename: (req, file, callback) => {
-        console.log(file)
         callback(null, Date.now() + path.extname(file.originalname));
     }
 });

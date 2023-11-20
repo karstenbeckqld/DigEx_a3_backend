@@ -66,7 +66,7 @@ router.get('/:spirit', Utils.authenticateToken, async (req, res) => {
                             message: 'No cocktails found.',
                         });
                     }
-                    console.log(`Cocktails for ${spiritId}`)
+                    console.log(`Cocktails for ${spiritId}`);
                     res.status(200).json(cocktails);
 
 
@@ -78,7 +78,7 @@ router.get('/:spirit', Utils.authenticateToken, async (req, res) => {
                         error: err
                     });
                 });
-        })
+        });
 });
 
 // Get cocktail information by ID. -------------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ router.get('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
                 console.log('Cocktail Found in cocktail/:id');
                 res.json(cocktail);
             }
-        })
+        });
 });
 
 // Update cocktail by ID. ----------------------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
     await Spirit.find({spiritName: spiritNameToPascalCase})
         .then(async (spirit) => {
             spiritId = spirit[0]._id;
-        })
+        });
 
     // Check if the request contains files. If yes, we process the images and save the file names in the below variables.
     if (req.files) {
@@ -189,7 +189,7 @@ router.put('/cocktail/:id', Utils.authenticateToken, async (req, res) => {
             });
         }
     }
-})
+});
 
 // Create new cocktail. ------------------------------------------------------------------------------------------------
 // Endpoint /cocktail/
@@ -249,7 +249,7 @@ router.post('/', Utils.authenticateToken, async (req, res) => {
                 });
             }
 
-            console.log(`Spirit ID for ${spirit[0].spiritName}: ${spirit[0]._id}`)
+            console.log(`Spirit ID for ${spirit[0].spiritName}: ${spirit[0]._id}`);
             const spiritId = spirit[0]._id;
 
             // Now we check if a cocktail with the same name os already in the database and if yes, we return.

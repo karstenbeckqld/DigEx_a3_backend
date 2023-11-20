@@ -140,7 +140,7 @@ class Utils {
                 .png({quality: 80,compressionLevel: 9, adaptiveFiltering: true, force: true})
                 .toFile('public/images/processed/' + fileName);
             await unlink('public/images/' + fileName, err => {
-                console.log(err)
+                console.log(err);
             });
             console.log('Deleted original fileName', fileName);
         } catch (err) {

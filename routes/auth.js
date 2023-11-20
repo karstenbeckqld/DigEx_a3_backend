@@ -40,7 +40,7 @@ router.post('/signin', async (req, res) => {
     await User.login(email, password)
         .then((user) => {
             if (user == null) {
-                return res.status(400).json({message: 'User not found'})
+                return res.status(400).json({message: 'User not found'});
             }
 
             const tokenPayload = {
@@ -101,19 +101,19 @@ router.get('/validate', (req, res) => {
 
             User.findById(tokenData._id)
                 .then((user) => {
-                    user.password = undefined
+                    user.password = undefined;
                     res.json({
                         user: user
-                    })
+                    });
                 })
                 .catch((err) => {
-                    console.log(err)
+                    console.log(err);
                     res.status(500).json({
                         message: "Problem validating token",
                         error: err
-                    })
+                    });
                 });
-        })
+        });
 
         // If there is no token at all, we return a message. In the final project, this will lead to the sign-in page.
     } else {
