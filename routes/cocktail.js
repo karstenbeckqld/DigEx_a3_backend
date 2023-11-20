@@ -12,7 +12,6 @@ const router = express.Router();
 const Cocktail = require('../models/cocktail');
 const Spirit = require('../models/spirit');
 const Utils = require('../Utils');
-const path = require('path');
 require('sharp');
 
 // As database operations are not carried out on the same server, there might be a slight delay between the request and

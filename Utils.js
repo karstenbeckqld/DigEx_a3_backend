@@ -17,9 +17,6 @@ const jwt = require('jsonwebtoken');
 const {v4: uuidv4} = require('uuid');
 const path = require('path');
 const sharp = require('sharp');
-const Cocktail = require("./models/cocktail");
-const {json} = require("express/lib/response");
-const {promisify} = require("util");
 const multer = require('multer');
 const {unlinkSync, unlink} = require("fs");
 // Create multer storage configuration

@@ -10,7 +10,6 @@
 // Bring in dependencies
 const mongoose = require("mongoose");
 require('mongoose-type-email');
-const Utils = require('../Utils');
 
 // Create user schema
 // The schema defines the database fields and their properties.
