@@ -1,5 +1,5 @@
 {
-  "name": "DigExA3",
+  "name": "spirit-artisans-backend",
   "version": "1.0.0",
   "description": "API for DigEx Major Project 1 (OUA)",
   "main": "server.js",
