@@ -18,19 +18,7 @@ const {v4: uuidv4} = require('uuid');
 const path = require('path');
 const sharp = require('sharp');
 const multer = require('multer');
-const {unlinkSync, unlink} = require("fs");
-// Create multer storage configuration
-const storage = multer.diskStorage({
-    destination: (req, file, callback) => {
-        callback(null, path.join(__dirname, '..', 'public', 'images'));
-    },
-    filename: (req, file, callback) => {
-        const fileExt = file.originalname.split('.').pop();
-        const uniqueFileName = uuidv4(undefined, undefined, undefined) + '.' + fileExt;
-        callback(null, uniqueFileName);
-    },
-});
-const upload = multer({storage: storage});
+const {unlink} = require("fs");
 
 // Class declaration
 class Utils {
@@ -132,7 +120,7 @@ class Utils {
     // in the /public/images/ folder. The sharp package then takes the file resizes and converts it, and saves it to the
     // /public/images/processed/ folder. It then deletes the originally uploaded file from /public/images/ to save disk
     // space.
-    async processImage(fileName, width, height, next) {
+    async processImage(fileName, width, height) {
 
         try {
             await sharp('public/images/' + fileName)
