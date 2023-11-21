@@ -127,17 +127,17 @@ class Utils {
         })
     }
 
-    // The processImage function takes in a file, width and height and uses the sharp package to resize the image. The
-    // file parameter in this case is the file name with extension. We use multer to upload files, which get stored in
-    // the /public/images/ folder. The sharp package then takes the file resizes and converts it, and saves it to the
+    // The processImage function takes in a file name, width and height and uses the sharp package to resize the image.
+    // The file parameter in this case is the file name with extension. We use multer to upload files, which get stored
+    // in the /public/images/ folder. The sharp package then takes the file resizes and converts it, and saves it to the
     // /public/images/processed/ folder. It then deletes the originally uploaded file from /public/images/ to save disk
     // space.
     async processImage(fileName, width, height, next) {
 
         try {
             await sharp('public/images/' + fileName)
-                .resize(width,height)
-                .png({quality: 80,compressionLevel: 9, adaptiveFiltering: true, force: true})
+                .resize(width, height)
+                .png({quality: 80, compressionLevel: 9, adaptiveFiltering: true, force: true})
                 .toFile('public/images/processed/' + fileName);
             await unlink('public/images/' + fileName, err => {
                 console.log(err);

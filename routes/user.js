@@ -135,7 +135,7 @@ router.put('/:id', Utils.authenticateToken, async (req, res) => {
 
             avatarFileName = await Utils.processImage(req.file.filename, 200, 200);
 
-           await updateUser({
+            await updateUser({
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
                 email: req.body.email,
